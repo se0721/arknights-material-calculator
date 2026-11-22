@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>罗德岛 · 材料拆解终端</title>
+
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #141516; --panel: #232426; --line: #424447;
+  --text: #edf0f0; --muted: #a0a3a6; --cyan: #70d1df;
+  --tier1: #a9adb0; --tier2: #87a97b; --tier3: #68a6c0;
+  --tier4: #ad83b9; --tier5: #d8b957;
+}
+* { box-sizing: border-box }
+body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--text); font: 16px/1.6 "Segoe UI", "Microsoft YaHei", sans-serif }
+body::before, body::after { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: -1 }
+body::before { background: radial-gradient(#a7a7a7 1px, transparent 1.2px) 0 0/9px 9px; opacity: .15; mask-image: radial-gradient(ellipse at 0% 85%,#000,transparent 42%),radial-gradient(ellipse at 100% 10%,#000,transparent 35%); mask-composite: add }
+body::after { background: radial-gradient(ellipse at 4% 20%,#ffffff0b,transparent 48%),radial-gradient(ellipse at 95% 95%,#ffffff06,transparent 40%); animation: ambient-drift 32s ease-in-out infinite alternate }
+@keyframes ambient-drift { to { transform: translateY(-28px); opacity: .45 } }
+button, input, select { font: inherit }
+button { color: inherit; cursor: pointer; transition: background-color .16s, color .16s, border-color .16s }
+button:disabled { cursor: default; opacity: .3 }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px }
+.hidden { display: none !important }
+.app { position: relative; max-width: 1240px; margin: auto; padding: 28px 30px 40px }
+.topbar { display: flex; align-items: center; gap: 15px; padding: 0 0 22px; border-bottom: 1px solid #ffffff20 }
+.brand-mark { width: 30px; height: 30px; display: grid; place-items: center; border: 1px solid #9da0a2; transform: rotate(45deg); font-size: 15px }
+.brand-mark span { transform: rotate(-45deg) }
+.brand { font-size: 13px; font-weight: 650; letter-spacing: .13em }
+.top-meta { margin-left: auto; color: #85898d; font: 11px ui-monospace,Consolas,monospace; letter-spacing: .08em }
+.status-dot { display: none }
+.hero { position: relative; overflow: hidden; margin: 28px 0 22px; padding: 27px 28px; min-height: 152px; background: linear-gradient(108deg,#c8caca 0%,#a0a2a2 22%,#424446 45%,#222325 64%,#1b1c1e 100%); color: #161719 }
+.hero::after { content: ""; position: absolute; right: 30px; top: 28px; bottom: 28px; width: 1px; background: #ffffff1a }
+.eyebrow { font-size: 10px; letter-spacing: .18em; margin-bottom: 8px; opacity: .7 }
+.hero h1 { font-size: 32px; letter-spacing: .045em; line-height: 1.35; margin: 0 0 9px; font-weight: 700 }
+.hero p { font-size: 13px; margin: 0; max-width: 285px; line-height: 1.7; opacity: .85 }
+.hero-tag { position: absolute; right: 49px; bottom: 30px; color: #989b9e; font: 10px ui-monospace,Consolas,monospace; letter-spacing: .12em }
+.mode-switch { display: flex; align-items: center; gap: 2px; margin-bottom: 24px; border-bottom: 1px solid #ffffff18 }
+.mode-tab { padding: 12px 20px; background: transparent; border: 0; border-bottom: 2px solid transparent; color: #a7aaad; font-size: 14px }
+.mode-tab:hover { color: white; background: #ffffff08 }
+.mode-tab.active { color: white; border-bottom-color: var(--cyan); background: #ffffff08 }
+.data-status { margin-left: auto; color: #969a9d; font-size: 12px }
+.data-status.error { color: #d8b58f }
+.layout { display: grid; grid-template-columns: 360px minmax(0,1fr); gap: 24px; align-items: start }
+.card { position: relative; background: var(--panel); border: 1px solid #ffffff16 }
+.card-head { display: flex; align-items: center; gap: 12px; padding: 20px 22px 16px; border-bottom: 1px solid #ffffff13 }
+.card-head h2 { font-size: 16px; line-height: 1.5; font-weight: 600; margin: 0 }
+.section-no, .head-note { display: none }
+.input-area { padding: 22px }
+.label, .mastery-label { display: block; color: #b6b9bc; font-size: 14px; margin-bottom: 10px }
+.pick-wrap, .operator-search-wrap { position: relative }
+.pick-button { width: 100%; min-height: 86px; display: flex; align-items: center; gap: 16px; padding: 14px; text-align: left; background: #18191b; border: 1px solid #535659 }
+.pick-button:hover, .pick-button[aria-expanded=true] { border-color: #a6aaad; background: #1d1e20 }
+#pickedIcon { flex: none }
+.pick-title { display: block; font-size: 17px; font-weight: 600; line-height: 1.5 }
+.pick-sub { display: block; color: #989ca0; font-size: 12px; margin-top: 5px }
+.chevron { margin-left: auto; color: #a5a8ab }
+.quantity-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; border-top: 1px solid #ffffff13; padding-top: 22px; margin-top: 24px }
+.quantity-row .label { margin: 0 }
+.quantity-hint { order: 3; width: 100%; font-size: 12px; color: #969a9d }
+.stepper { display: flex; align-items: center; margin-left: auto; border: 1px solid #56595c; background: #18191b }
+.stepper button { width: 36px; height: 40px; border: 0; background: #343638; font-size: 20px }
+.stepper button:hover { background: #dedfdf; color: #151617 }
+.stepper input { width: 58px; text-align: center; border: 0; background: transparent; color: white; font: 500 22px ui-monospace,Consolas,monospace; outline: 0 }
+.workshop-note, .operator-hint { color: #969a9d; font-size: 12px; line-height: 1.9; margin: 24px 0 0 }
+.result-card { background: #1b1c1e; min-height: 400px }
+.result-card .card-head { padding: 22px 26px 18px }
+.result-card .card-head h2 { font-size: 19px; letter-spacing: .03em }
+.result-controls { display: flex; align-items: center; gap: 5px; padding: 15px 26px; border-bottom: 1px solid #ffffff10 }
+.view-tab, .op-view-tab { padding: 7px 11px; border: 1px solid transparent; background: transparent; font-size: 13px; color: #a0a4a8 }
+.view-tab:hover, .op-view-tab:hover { color: white; background: #ffffff0a }
+.view-tab.active, .op-view-tab.active { background: #d6d8d9; color: #1b1c1e }
+.result-count { margin-left: auto; white-space: nowrap; color: #93989c; font: 12px ui-monospace,Consolas,monospace }
+.results { padding: 4px 26px 20px }
+.result-row { display: flex; align-items: center; gap: 16px; padding: 17px 0; border-bottom: 1px solid #ffffff0e; animation: none }
+.result-row:last-child { border: 0 }
+.result-copy { min-width: 0 }
+.result-name { font-size: 15px; font-weight: 550; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.result-tier { color: #92979b; font-size: 12px; margin-top: 4px }
+.result-qty { margin-left: auto; font: 550 28px ui-monospace,Consolas,monospace; font-variant-numeric: tabular-nums; letter-spacing: -.04em; padding-left: 12px }
+.footnote { padding: 0 26px 22px; font-size: 12px; color: #92979b; line-height: 1.8 }
+.empty { text-align: center; padding: 58px 12px; color: #9ca0a4; font-size: 14px; line-height: 1.8 }
+.empty-symbol { font-size: 25px; color: #6b7074; margin-bottom: 12px }
+.mat-icon { display: grid; place-items: center; position: relative; width: 48px; height: 48px; flex: none; background: #2b2d30; overflow: hidden }
+.mat-icon::after { content: ""; position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: var(--tier) }
+.mat-icon img { width: 90%; height: 90%; object-fit: contain }
+.mat-icon img.bad { display: none }
+.picker, .operator-options { display: none; position: absolute; top: calc(100% + 8px); left: 0; width: 620px; max-width: calc(100vw - 106px); z-index: 12; overflow-y: auto; overscroll-behavior: contain; padding: 16px; background: #303235; border: 1px solid #73777a; box-shadow: 0 18px 45px #0008 }
+.picker.open, .operator-options.open { display: block; animation: popup-enter .18s ease-out }
+@keyframes popup-enter { from { opacity: 0; transform: translateY(-6px) } to { opacity: 1; transform: translateY(0) } }
+.picker-cats, .operator-cats { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 13px }
+.cat, .operator-cat { flex: none; background: transparent; border: 1px solid #666a6e; color: #c4c7ca; padding: 6px 10px; font-size: 12px }
+.cat:hover, .operator-cat:hover { background: #ffffff12 }
+.cat.active, .operator-cat.active { background: #dce0e1; color: #1a1c1e; border-color: #dce0e1 }
+.cat i { display: inline-block; width: 5px; height: 5px; margin-right: 6px; background: var(--tier) }
+.material-grid { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 9px }
+.material-option { background: #252729; border: 1px solid #ffffff0c; padding: 12px 4px 10px; min-width: 0 }
+.material-option:hover, .operator-option:hover { background: #43464a; border-color: #a4aaae }
+.material-option .mat-icon { margin: 0 auto 12px; background: transparent }
+.mat-label { font-size: 12px; color: #e1e3e4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.picker-bottom, .operator-picker-bottom { display: flex; align-items: center; justify-content: center; gap: 14px; padding-top: 16px; color: #c2c7ca; font-size: 12px }
+.pager { width: 32px; height: 30px; padding: 0; background: transparent; border: 1px solid #64686b; font-size: 20px; line-height: 1 }
+.pager:hover:not(:disabled) { color: #17191a; background: #e2e5e6 }
+.search { position: relative }
+.search input { width: 100%; height: 46px; padding: 0 35px 0 13px; background: #17191b; border: 1px solid #555b5f; color: #eceff0; outline: 0; font-size: 15px }
+.search input:focus { border-color: var(--cyan) }
+.search::after { content: "⌕"; position: absolute; right: 12px; top: 3px; font-size: 24px; color: #a3a9ae; pointer-events: none }
+.operator-options { max-height: 470px; overflow-y: auto; overscroll-behavior: contain }
+.operator-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 9px }
+.operator-option { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 10px; text-align: left; background: #252729; border: 1px solid #ffffff0c }
+.operator-avatar-wrap { position: relative; display: inline-grid; place-items: center; width: 42px; height: 42px; flex: none; overflow: hidden; background: #41454a }
+.operator-avatar-placeholder { font-size: 18px; color: #acb2b8 }
+.operator-avatar { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover }
+.operator-option-name { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 14px; font-weight: 550 }
+.operator-option-name small { display: block; margin-top: 5px }
+.operator-option-name small, .operator-picked small { color: #c9b978; font-size: 9px; letter-spacing: 1px }
+.operator-picked { display: flex; align-items: center; gap: 12px; margin-top: 18px; padding: 12px 0; border-bottom: 1px solid #ffffff17; min-height: 55px; font-size: 14px }
+.operator-picked small { display: block; margin-top: 3px }
+.operator-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 20px 16px; margin-top: 22px }
+.operator-fields label { color: #b6b9bc; font-size: 14px }
+.operator-fields label:first-child { grid-column: 1/-1 }
+.operator-fields select { display: block; width: 100%; height: 42px; margin-top: 8px; padding: 0 34px 0 12px; border: 1px solid #555b5f; border-radius: 0; background: #17191b; color: #ecf0f1; appearance: none; background-image: linear-gradient(45deg,transparent 50%,#b6b9bc 50%),linear-gradient(135deg,#b6b9bc 50%,transparent 50%); background-position: calc(100% - 16px) 18px,calc(100% - 11px) 18px; background-size: 5px 5px; background-repeat: no-repeat; cursor: pointer }
+.mastery-control { min-width: 0 }
+.mastery-drum { position: relative; overflow: hidden; background: #161719; border: 1px solid #54595d; border-radius: 3px; box-shadow: inset 0 5px 12px #0005 }
+.mastery-drum::before { content: ""; position: absolute; pointer-events: none; z-index: 1; top: 32px; left: 0; right: 0; height: 32px; background: #ffffff09; border-block: 1px solid #80858b }
+.mastery-drum::after { content: ""; position: absolute; pointer-events: none; z-index: 2; inset: 0; background: linear-gradient(#161719dd,transparent 36%,transparent 64%,#161719dd) }
+.mastery-wheel { height: 96px; overflow-y: auto; scroll-snap-type: y mandatory; overscroll-behavior: contain; scrollbar-width: none; padding: 32px 0; cursor: grab; touch-action: pan-y; user-select: none; position: relative }
+.mastery-wheel::-webkit-scrollbar { display: none }
+.mastery-wheel.dragging { cursor: grabbing; scroll-snap-type: none }
+.mastery-wheel:focus-visible { outline-offset: -3px }
+.mastery-notch { height: 32px; line-height: 32px; text-align: center; scroll-snap-align: center; scroll-snap-stop: always; font-size: 14px; letter-spacing: .1em; color: #949aa0 }
+.mastery-notch.active { color: #fff; font-weight: 650 }
+.wheel-caption { display: block; margin-top: 7px; font-size: 12px; color: #91979c }
+.data-notice { color: #959b9f; font-size: 12px; margin-top: 24px; line-height: 1.8 }
+.site-footer { max-width: 1240px; margin: 0 auto 25px; padding: 0 30px; color: #969b9f; font-size: 12px; line-height: 1.8 }
+.site-footer a { color: #bbc1c5; text-underline-offset: 3px }
+.toast { display: none }
+@media(max-width: 850px) {
+  .app { padding: 22px 22px 32px }
+  .layout { grid-template-columns: 1fr; gap: 20px }
+  .picker, .operator-options { max-width: 100%; width: 620px }
+  .data-status { max-width: 45%; text-align: right; font-size: 11px }
+  .result-card { min-height: 300px }
+  .site-footer { padding: 0 22px }
+}
+@media(max-width: 520px) {
+  .app { padding: 18px 12px 28px }
+  .brand { font-size: 11px; letter-spacing: .07em }
+  .top-meta { display: none }
+  .topbar { padding-bottom: 18px }
+  .hero { padding: 24px 20px; margin: 22px 0 18px; background: linear-gradient(110deg,#c8caca,#929494 52%,#333537); min-height: 150px }
+  .hero h1 { font-size: 28px }
+  .hero p { max-width: 245px }
+  .eyebrow { font-size: 9px; letter-spacing: .1em }
+  .hero-tag, .hero::after { display: none }
+  .mode-switch { flex-wrap: wrap; padding-bottom: 10px; margin-bottom: 18px }
+  .mode-tab { font-size: 14px; padding: 9px 15px }
+  .data-status { width: 100%; max-width: none; margin: 9px 0 0; text-align: left }
+  .input-area { padding: 18px }
+  .card-head, .result-card .card-head { padding: 17px 18px }
+  .result-card .card-head h2 { font-size: 18px }
+  .picker, .operator-options { left: -10px; max-width: none; width: calc(100% + 20px); padding: 10px }
+  .picker-cats { gap: 4px }
+  .cat, .operator-cat { padding: 6px 8px }
+  .material-grid { gap: 5px }
+  .material-option { padding: 10px 2px }
+  .material-option .mat-icon { width: 42px; height: 42px }
+  .mat-label { font-size: 11px }
+  .operator-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px }
+  .operator-option { padding: 8px; gap: 8px }
+  .operator-avatar-wrap { width: 36px; height: 36px }
+  .operator-option-name { font-size: 13px }
+  .result-controls { padding: 12px 13px; gap: 3px }
+  .view-tab, .op-view-tab { font-size: 12px; padding: 7px 9px }
+  .results { padding: 4px 18px 16px }
+  .footnote { padding: 0 18px 18px }
+  .result-qty { font-size: 26px }
+  .site-footer { padding: 0 12px }
+}
+@media(prefers-reduced-motion: reduce) {
+  body::after { animation: none }
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important }
+}
+
+</style>
+</head>
+<body>
+<main class="app">
+  <header class="topbar"><div class="brand-mark"><span>R</span></div><div class="brand">RHODES ISLAND <span style="color:#6e7779;font-weight:400">/ LOGISTICS</span></div><div class="top-meta"><span class="status-dot"></span>SUPPLY ANALYSIS　　CN / 01</div></header>
+  <section class="hero"><div><div class="eyebrow">Material conversion · Workshop data</div><h1>材料拆解终端</h1><p>从目标出发，汇总加工与专精所需材料</p></div><div class="hero-tag">RIIC　/　RESOURCE PLANNING</div></section>
+  <nav class="mode-switch"><button class="mode-tab active" data-mode="materials">材料转化</button><button class="mode-tab" data-mode="operators">干员养成</button><span class="data-status" id="dataStatus">正在同步游戏数据</span></nav>
+  <div class="layout" id="materialLayout">
+    <section class="card"><div class="card-head"><span class="section-no">01</span><h2>目标材料</h2><span class="head-note">SELECT MATERIAL</span></div>
+      <div class="input-area"><span class="label">选择需要拆解的材料</span>
+        <div class="pick-wrap"><button class="pick-button" id="pickButton" aria-expanded="false"><span id="pickedIcon"></span><span><span class="pick-title" id="pickedName"></span><span class="pick-sub" id="pickedMeta"></span></span><span class="chevron">⌄</span></button>
+        <div class="picker" id="picker"><div class="picker-cats" id="categories"></div><div class="material-grid" id="materialGrid"></div><div class="picker-bottom"><button class="pager" id="prevPage">‹</button><span id="pageInfo"></span><button class="pager" id="nextPage">›</button></div></div></div>
+        <div class="quantity-row"><span class="label">目标数量</span><span class="quantity-hint">按住 + / − 连续调整</span><div class="stepper"><button id="minus" aria-label="减少">−</button><input id="quantity" value="1" inputmode="numeric" aria-label="数量"><button id="plus" aria-label="增加">+</button></div></div><p class="workshop-note">仅列出可加工合成的材料。<br>目标至少展开一层配方；基础原料可追溯到合成链末端。</p>
+      </div>
+    </section>
+    <section class="card result-card"><div class="card-head"><span class="section-no">02</span><h2>拆解清单</h2><span class="head-note">REQUIRED MATERIALS</span></div><div class="result-controls"><button class="view-tab" data-view="purple">至紫色</button><button class="view-tab active" data-view="blue">至蓝色</button><button class="view-tab" data-view="base">基础原料</button><span class="result-count" id="resultCount"></span></div><div class="results" id="results"></div><div class="footnote" id="footnote"></div></section>
+  </div>
+  <div class="layout hidden" id="operatorLayout">
+    <section class="card"><div class="card-head"><span class="section-no">03</span><h2>干员与养成目标</h2><span class="head-note">OPERATOR TRAINING</span></div>
+      <div class="input-area"><label class="label" for="operatorSearch">选择干员</label><div class="operator-search-wrap"><div class="search"><input id="operatorSearch" type="search" placeholder="搜索干员名称…" autocomplete="off"></div><div class="operator-options" id="operatorOptions"></div></div>
+        <div class="operator-picked" id="operatorPicked">选择干员后设置专精目标</div>
+        <div class="operator-fields"><label>专精技能<select id="operatorSkill"><option value="all">全部技能</option><option value="">先选择干员</option></select></label><div class="mastery-control"><span class="mastery-label" id="masteryStateLabel">当前进度</span><input type="hidden" id="masteryState" value="0"><div class="mastery-drum"><div class="mastery-wheel" data-input="masteryState" tabindex="0" role="spinbutton" aria-labelledby="masteryStateLabel" aria-valuemin="0" aria-valuemax="3" aria-valuenow="0"><div class="mastery-notch" data-level="0">未专精</div><div class="mastery-notch" data-level="1">专一</div><div class="mastery-notch" data-level="2">专二</div><div class="mastery-notch" data-level="3">专三</div></div></div><span class="wheel-caption">滚动 / 拖动调节</span></div><div class="mastery-control"><span class="mastery-label" id="masteryTargetLabel">目标专精</span><input type="hidden" id="masteryTarget" value="3"><div class="mastery-drum"><div class="mastery-wheel" data-input="masteryTarget" tabindex="0" role="spinbutton" aria-labelledby="masteryTargetLabel" aria-valuemin="0" aria-valuemax="3" aria-valuenow="3"><div class="mastery-notch" data-level="0">未专精</div><div class="mastery-notch" data-level="1">专一</div><div class="mastery-notch" data-level="2">专二</div><div class="mastery-notch" data-level="3">专三</div></div></div><span class="wheel-caption">滚动 / 拖动调节</span></div></div>
+        <div class="operator-hint">干员默认视为精二；滚轮中间高亮的档位为当前选值。选择“全部技能”会汇总所选专精区间内全部技能费用。</div>
+      </div>
+    </section>
+    <section class="card result-card"><div class="card-head"><span class="section-no">04</span><h2>养成材料清单</h2><span class="head-note">TRAINING COST</span></div><div class="result-controls"><button class="op-view-tab active" data-view="direct">直接消耗</button><button class="op-view-tab" data-view="purple">紫色汇总</button><button class="op-view-tab" data-view="blue">蓝色汇总</button><span class="result-count" id="operatorResultCount"></span></div><div class="results op-results" id="operatorResults"><div class="empty"><div class="empty-symbol">◇</div>选择干员与目标后显示材料清单</div></div><div class="footnote" id="operatorFootnote">专精费用按游戏数据表逐项累计。</div></section>
+  </div>
+  <div class="data-notice" id="dataNotice"></div></main><footer class="site-footer">材料信息与图标参考：<a href="https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/master/zh_CN/gamedata/excel/item_table.json" target="_blank" rel="noreferrer">游戏物品数据</a> · 配方参考：<a href="https://wiki.biligame.com/arknights/基建配方一览" target="_blank" rel="noreferrer">基建配方一览</a> · 图标由 PRTS 素材库提供。</footer><div class="toast" id="toast"></div>
+<script>
+const PRTS='https://torappu.prts.wiki/assets/item_icon/';
+const tiers={1:'灰色材料',2:'绿色材料',3:'蓝色材料',4:'紫色材料',5:'金色材料'};
+// A small verified rock chain keeps offline conversion usable; online data replaces it.
+let materialCatalog=[{"id":"30011","name":"源岩","tier":1,"icon":"MTL_SL_G1","classifyType":"MATERIAL"},{"id":"30012","name":"固源岩","tier":2,"icon":"MTL_SL_G2","classifyType":"MATERIAL"},{"id":"30013","name":"固源岩组","tier":3,"icon":"MTL_SL_G3","classifyType":"MATERIAL"},{"id":"30014","name":"提纯源岩","tier":4,"icon":"MTL_SL_G4","classifyType":"MATERIAL"}];
+let recipes={"30012":{"30011":3},"30013":{"30012":5},"30014":{"30013":4}},byId=Object.fromEntries(materialCatalog.map(m=>[m.id,m]));
+let mats=materialCatalog.filter(m=>recipes[m.id]),operators=[],selectedOperator=null,operatorView='direct',allGameItems=byId;
+let materialIds=new Set(materialCatalog.map(m=>m.id));
+let selected=byId['30013'],quantity=1,activeTier=0,page=0,view='blue'; const el=id=>document.getElementById(id);
+function iconHTML(m){return '<span class="mat-icon" style="--tier:var(--tier'+(m.tier||0)+')"><img loading="lazy" src="'+PRTS+(m.icon||'')+'.png" alt="" onerror="this.classList.add(\'bad\')"></span>'}
+function renderSelected(){el('pickedIcon').innerHTML=iconHTML(selected);el('pickedName').textContent=selected.name;el('pickedMeta').textContent=tiers[selected.tier]+'　·　'+selected.id}
+function buildCategories(){let h='<button class="cat '+(!activeTier?'active':'')+'" data-tier="0">全部</button>';for(let t=1;t<=5;t++){if(!mats.some(m=>m.tier===t))continue;h+='<button class="cat '+(activeTier===t?'active':'')+'" data-tier="'+t+'" style="--tier:var(--tier'+t+')"><i></i>'+tiers[t]+'</button>'}el('categories').innerHTML=h;el('categories').querySelectorAll('.cat').forEach(x=>x.onclick=e=>{e.stopPropagation();activeTier=+x.dataset.tier;page=0;renderPicker()})}
+function renderPicker(){if(activeTier&&!mats.some(m=>m.tier===activeTier))activeTier=0;buildCategories();let f=mats.filter(m=>(!activeTier||m.tier===activeTier)),pages=Math.max(1,Math.ceil(f.length/15));page=Math.min(page,pages-1);let slice=f.slice(page*15,page*15+15);el('materialGrid').innerHTML=slice.map(m=>'<button class="material-option" data-id="'+m.id+'">'+iconHTML(m)+'<div class="mat-label">'+m.name+'</div></button>').join('')||'<div class="empty" style="grid-column:1/-1">没有找到匹配材料</div>';el('materialGrid').querySelectorAll('.material-option').forEach(x=>x.onclick=()=>{selected=byId[x.dataset.id];pickerClose();renderAll()});el('pageInfo').textContent=(page+1)+' / '+pages;el('prevPage').disabled=page===0;el('nextPage').disabled=page>=pages-1;el('prevPage').onclick=()=>{page=Math.max(0,page-1);renderPicker()};el('nextPage').onclick=()=>{page=Math.min(pages-1,page+1);renderPicker()}}
+function positionPicker(popup){
+  popup.style.top='calc(100% + 8px)';popup.style.bottom='auto';popup.style.maxHeight='';
+  const rect=popup.parentElement.getBoundingClientRect();
+  const below=Math.max(80,innerHeight-rect.bottom-20),above=Math.max(80,rect.top-20);
+  const height=popup.getBoundingClientRect().height;
+  if(height>below&&above>below){popup.style.top='auto';popup.style.bottom='calc(100% + 8px)';popup.style.maxHeight=above+'px'}
+  else popup.style.maxHeight=below+'px';
+}
+window.addEventListener('resize',()=>document.querySelectorAll('.picker.open,.operator-options.open').forEach(positionPicker));
+function pickerClose(){el('picker').classList.remove('open');el('pickButton').setAttribute('aria-expanded','false')}
+function aggregate(node,stop,amount,out,stack=[]){
+  if(!node||!materialIds.has(node.id))return;
+  const recipe=recipes[node.id];
+  if((node.tier&&node.tier<=stop)||!recipe){out[node.id]=(out[node.id]||0)+amount;return}
+  if(stack.includes(node.id))throw Error('材料配方存在循环：'+node.name);
+  for(const [id,n] of Object.entries(recipe))aggregate(byId[id],stop,amount*n,out,[...stack,node.id]);
+}
+function computeMaterialCosts(node,amount,mode){
+  const out={},recipe=recipes[node?.id];
+  if(!recipe)return out;
+  const stop=mode==='purple'?4:mode==='blue'?3:0;
+  // The selected target always opens once, even when already at/below the stop tier.
+  for(const [id,n] of Object.entries(recipe))aggregate(byId[id],stop,amount*n,out,[node.id]);
+  return out;
+}
+function resultRows(out){return Object.keys(out).sort((a,b)=>(byId[a]?.tier||9)-(byId[b]?.tier||9)||((byId[a]?.name||a).localeCompare(byId[b]?.name||b,'zh-CN'))).map(id=>{let m=byId[id]||{id,name:allGameItems[id]?.name||id,tier:0,icon:''};return '<div class="result-row" data-item-id="'+id+'">'+iconHTML(m)+'<div class="result-copy"><div class="result-name">'+m.name+'</div><div class="result-tier">'+(tiers[m.tier]||'其他材料')+'</div></div><div class="result-qty">'+out[id]+'</div></div>'}).join('')}
+let resultAnimationTimer,quantityHeld=false;
+function animateMaterialResults(){
+  clearTimeout(resultAnimationTimer);
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  el('results').getAnimations().forEach(a=>a.cancel());
+  el('results').animate([{opacity:.65,transform:'translateY(4px)'},{opacity:1,transform:'translateY(0)'}],{duration:230,easing:'ease-out'});
+}
+function scheduleMaterialAnimation(){clearTimeout(resultAnimationTimer);resultAnimationTimer=setTimeout(animateMaterialResults,200)}
+function renderResults(animate=true){
+  const out=computeMaterialCosts(selected,quantity,view);
+  let current=Array.from(el('results').querySelectorAll('.result-row'));
+  if(current.length===Object.keys(out).length&&current.every(row=>Object.hasOwn(out,row.dataset.itemId))){
+    current.forEach(row=>row.querySelector('.result-qty').textContent=out[row.dataset.itemId]);
+  }else el('results').innerHTML=resultRows(out)||'<div class="empty">没有需要拆解的材料</div>';
+  el('resultCount').textContent=Object.keys(out).length+' 种';
+  el('footnote').textContent=view==='base'?'逐层拆分至无加工配方的基础原料；不计加工龙门币与随机副产物。':'目标先展开一层配方，再汇总至'+(view==='purple'?'紫色':'蓝色')+'及以下材料；不计加工龙门币与随机副产物。';
+  if(animate)animateMaterialResults();
+}
+function portraitURLs(o){
+  const avatar=encodeURIComponent(o.id)+'.png';
+  const portrait=encodeURIComponent(o.portraitId||o.id+'_1')+'.png';
+  return ['https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/'+avatar,
+    'https://cdn.jsdelivr.net/gh/yuanyan3060/ArknightsGameResource@main/avatar/'+avatar,
+    'https://torappu.prts.wiki/assets/char_portrait/'+portrait];
+}
+let operatorTier=0,operatorPage=0;
+function nextOperatorPortrait(img){
+  const urls=JSON.parse(img.dataset.sources),next=Number(img.dataset.sourceIndex)+1;
+  img.dataset.sourceIndex=String(next);
+  if(next<urls.length)img.src=urls[next];
+  else{img.hidden=true;img.parentElement.classList.add('avatar-unavailable')}
+}
+function operatorPortraitHTML(o){
+  const urls=portraitURLs(o),sources=JSON.stringify(urls).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+  return '<span class="operator-avatar-wrap"><span class="operator-avatar-placeholder" aria-hidden="true">◇</span><img class="operator-avatar" src="'+urls[0]+'" data-sources="'+sources+'" data-source-index="0" alt="" decoding="async" referrerpolicy="no-referrer" onerror="nextOperatorPortrait(this)"></span>';
+}
+function showOperatorOptions(){let q=el('operatorSearch').value.trim().toLowerCase(),filtered=operators.filter(o=>(!operatorTier||o.rarity===operatorTier)&&(!q||o.name.toLowerCase().includes(q))),pages=Math.max(1,Math.ceil(filtered.length/15));operatorPage=Math.min(operatorPage,pages-1);let html='<div class="operator-cats"><button class="operator-cat '+(!operatorTier?'active':'')+'" data-tier="0">全部</button>';for(let t=6;t>=4;t--)html+='<button class="operator-cat '+(operatorTier===t?'active':'')+'" data-tier="'+t+'">'+t+'★</button>';html+='</div><div class="operator-grid">'+filtered.slice(operatorPage*15,operatorPage*15+15).map(o=>'<button class="operator-option" data-id="'+o.id+'">'+operatorPortraitHTML(o)+'<span class="operator-option-name">'+o.name+' <small>'+('★'.repeat(o.rarity))+'</small></span></button>').join('')+'</div>';if(!filtered.length)html+='<div class="empty" style="padding:18px">没有匹配的四至六星干员</div>';html+='<div class="operator-picker-bottom"><button class="pager" id="opPrev" '+(operatorPage===0?'disabled':'')+'>‹</button><span>'+filtered.length+' 名　·　'+(operatorPage+1)+' / '+pages+'</span><button class="pager" id="opNext" '+(operatorPage>=pages-1?'disabled':'')+'>›</button></div>';el('operatorOptions').innerHTML=html;el('operatorOptions').classList.add('open');positionPicker(el('operatorOptions'));el('operatorOptions').querySelectorAll('.operator-cat').forEach(b=>b.onclick=e=>{e.stopPropagation();operatorTier=+b.dataset.tier;operatorPage=0;showOperatorOptions()});el('operatorOptions').querySelectorAll('.operator-option').forEach(b=>b.onclick=()=>selectOperator(operators.find(o=>o.id===b.dataset.id)));el('opPrev').onclick=()=>{operatorPage=Math.max(0,operatorPage-1);showOperatorOptions()};el('opNext').onclick=()=>{operatorPage=Math.min(pages-1,operatorPage+1);showOperatorOptions()}}function selectOperator(op){selectedOperator=op;el('operatorOptions').classList.remove('open');el('operatorSearch').value=op.name;el('operatorPicked').innerHTML=operatorPortraitHTML(op)+'<span>'+op.name+' <small>'+('★'.repeat(op.rarity))+'</small></span>';el('operatorSkill').innerHTML='<option value="all">全部技能</option>'+op.skills.map((s,i)=>'<option value="'+i+'">技能 '+(i+1)+(s.name?' · '+s.name:'')+'</option>').join('');el('masteryState').value='0';el('masteryTarget').value='3';syncMasteryWheels();renderOperatorResults()}function addCosts(out,costs,mult=1){(costs||[]).forEach(c=>{let id=String(c.id||c.itemId||'');let n=Number(c.count)||0;if(id&&n&&materialIds.has(id))out[id]=(out[id]||0)+n*mult})}
+function computeOperatorCosts(){let out={};if(!selectedOperator)return out;let from=+el('masteryState').value,target=+el('masteryTarget').value;if(target<from){el('operatorResults').innerHTML='<div class="empty">目标专精需大于或等于当前进度</div>';el('operatorResultCount').textContent='';return null}let chosen=el('operatorSkill').value==='all'?selectedOperator.skills:[selectedOperator.skills[+el('operatorSkill').value]].filter(Boolean);for(let skill of chosen)for(let level=from;level<target;level++){let cost=skill.levelUpCostCond[level]?.levelUpCost;addCosts(out,cost)}return out}
+function renderOperatorResults(){
+  if(!selectedOperator){
+    el('operatorResults').innerHTML='<div class="empty"><div class="empty-symbol">◇</div>选择干员后，查看所需专精材料</div>';
+    el('operatorResultCount').textContent='';return;
+  }
+  let direct=computeOperatorCosts();if(!direct)return;let out={};if(operatorView==='direct')out=direct;else for(let [id,n] of Object.entries(direct)){if(byId[id])aggregate(byId[id],operatorView==='purple'?4:3,n,out);else out[id]=(out[id]||0)+n}let rows=resultRows(out);el('operatorResults').innerHTML=rows||'<div class="empty">该专精区间不需要材料</div>';el('operatorResultCount').textContent=Object.keys(out).length+' 种';el('operatorFootnote').textContent=(operatorView==='direct'?'按技能专精费用逐级累计养成材料。':'按加工站配方汇总至'+(operatorView==='purple'?'紫色':'蓝色')+'及以下材料。')+'仅统计养成材料，已排除技巧概要。'}
+function buildOperators(table){operators=Object.entries(table||{}).filter(([id,c])=>id.startsWith('char_')&&c.name&&Array.isArray(c.phases)&&Array.isArray(c.skills)&&c.isNotObtainable!==true).map(([id,c])=>{let raw=Number(String(c.rarity||'').replace('TIER_',''));let stars=raw;return {id,name:c.name,rarity:stars,portraitId:c.portraitId,skills:c.skills.map(s=>({name:s.name,levelUpCostCond:s.levelUpCostCond||[]}))}}).filter(o=>o.rarity>=4&&o.rarity<=6&&o.skills.length).sort((a,b)=>b.rarity-a.rarity||a.name.localeCompare(b.name,'zh-CN'))}
+function normalizeGameData(itemData,charData,buildingData){
+  const raw=Object.values(itemData.items||itemData).filter(x=>x?.itemId);
+  const all=raw.map(x=>({id:String(x.itemId),name:x.name||String(x.itemId),tier:Number(String(x.rarity||'').replace('TIER_','')),icon:x.iconId||'',sortId:x.sortId,classifyType:x.classifyType}));
+  const items=Object.fromEntries(all.map(x=>[x.id,x])),recipeMap={};
+  const formulas=buildingData.workshopFormulas||{};
+  for(const item of raw)for(const product of item.buildingProductList||[]){
+    if(product.roomType!=='WORKSHOP')continue;
+    const formula=formulas[String(product.formulaId)];
+    if(formula?.formulaType!=='F_EVOLVE')continue;
+    // Product linkage, actual output ID, yield and every cost must agree with the table.
+    if(String(formula.itemId)!==String(item.itemId)||Number(formula.count)!==1)throw Error('不支持的材料配方产物或产量：'+item.name);
+    if(!Array.isArray(formula.costs)||!formula.costs.length)throw Error('材料配方缺少成本：'+item.name);
+    const recipe={};
+    for(const cost of formula.costs){
+      const id=String(cost.id),count=Number(cost.count);
+      if(!items[id]||!Number.isInteger(count)||count<=0)throw Error('材料配方成本无效：'+item.name);
+      recipe[id]=(recipe[id]||0)+count;
+    }
+    recipeMap[String(formula.itemId)]=recipe;
+  }
+  const eligible=new Set(),visit=(id,stack=[])=>{
+    if(stack.includes(id))throw Error('材料配方存在循环：'+id);
+    if(eligible.has(id))return;
+    const item=items[id];
+    if(!item||item.classifyType!=='MATERIAL'||item.tier<1||item.tier>5||/^技巧概要/.test(item.name))throw Error('养成配方包含范围外物品：'+id);
+    eligible.add(id);
+    for(const child of Object.keys(recipeMap[id]||{}))visit(child,[...stack,id]);
+  };
+  Object.keys(recipeMap).forEach(id=>visit(id));
+  const catalog=all.filter(m=>eligible.has(m.id)).sort((a,b)=>a.tier-b.tier||(a.sortId||0)-(b.sortId||0));
+  const selectable=catalog.filter(m=>recipeMap[m.id]);
+  if(!selectable.length)throw Error('未找到加工站可合成养成材料');
+  allGameItems=items;byId=items;recipes=recipeMap;materialCatalog=catalog;materialIds=eligible;mats=selectable;
+  buildOperators(charData);
+  selected=mats.find(m=>m.id===selected?.id)||mats.find(m=>m.id==='30013')||mats[0];
+  renderAll();if(selectedOperator)renderOperatorResults();
+  if(el('picker').classList.contains('open')){renderPicker();positionPicker(el('picker'))}
+  if(el('operatorOptions').classList.contains('open'))showOperatorOptions();
+  el('dataStatus').textContent='游戏数据已载入 · '+mats.length+' 种可合成材料 · '+operators.length+' 名干员';
+  el('dataStatus').classList.remove('error');
+  el('dataNotice').textContent='可选 '+mats.length+' 种加工站养成材料；另保留 '+(catalog.length-mats.length)+' 种合成链原料用于计算。技巧概要不纳入结果。数据源：Kengxxiao/ArknightsGameData。';
+}
+async function loadGameData(){const root='https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/master/zh_CN/gamedata/excel/',cdn='https://cdn.jsdelivr.net/gh/Kengxxiao/ArknightsGameData@master/zh_CN/gamedata/excel/';try{let d=await Promise.all(['item_table.json','character_table.json','building_data.json'].map(async f=>{let err;for(let base of [root,cdn])try{let r=await fetch(base+f,{cache:'no-cache'});if(!r.ok)throw Error(r.status);return await r.json()}catch(e){err=e}throw err}));normalizeGameData(...d)}catch(e){el('dataStatus').textContent='在线数据不可用 · 使用源岩链备用数据';el('dataStatus').classList.add('error');el('dataNotice').textContent='在线游戏数据加载失败；目前仅提供源岩链的 3 种可合成材料。完整材料与干员列表需联网加载。';console.warn('Game data unavailable',e)}}
+function renderAll(){renderSelected();renderResults()}function setQuantity(n){
+  const next=Math.max(1,Math.min(9999,Math.floor(+n||1)));
+  el('quantity').value=next;if(next===quantity)return;
+  quantity=next;clearTimeout(resultAnimationTimer);el('results').getAnimations().forEach(a=>a.cancel());renderResults(false);
+  if(!quantityHeld)scheduleMaterialAnimation();
+}
+el('pickButton').onclick=()=>{let open=!el('picker').classList.contains('open');el('picker').classList.toggle('open',open);el('pickButton').setAttribute('aria-expanded',String(open));if(open){renderPicker();positionPicker(el('picker'))}};el('quantity').onchange=e=>setQuantity(e.target.value);
+function hold(b,d){
+  let t,i,active=false,initialQuantity;
+  const stop=()=>{if(!active)return;active=false;quantityHeld=false;clearTimeout(t);clearInterval(i);if(quantity!==initialQuantity)scheduleMaterialAnimation()};
+  b.addEventListener('pointerdown',e=>{if(e.button!==0)return;e.preventDefault();active=true;initialQuantity=quantity;quantityHeld=true;clearTimeout(resultAnimationTimer);b.setPointerCapture(e.pointerId);setQuantity(quantity+d);t=setTimeout(()=>i=setInterval(()=>setQuantity(quantity+d),75),360)});
+  ['pointerup','pointercancel','lostpointercapture'].forEach(event=>b.addEventListener(event,stop));
+  b.addEventListener('click',e=>{if(e.detail===0)setQuantity(quantity+d)});
+  window.addEventListener('blur',stop);
+}hold(el('plus'),1);hold(el('minus'),-1);
+document.querySelectorAll('.view-tab').forEach(b=>b.onclick=()=>{view=b.dataset.view;document.querySelectorAll('.view-tab').forEach(x=>x.classList.toggle('active',x===b));renderResults()});document.querySelectorAll('.mode-tab').forEach(b=>b.onclick=()=>{let o=b.dataset.mode==='operators';el('materialLayout').classList.toggle('hidden',o);el('operatorLayout').classList.toggle('hidden',!o);document.querySelectorAll('.mode-tab').forEach(x=>x.classList.toggle('active',x===b));if(o){syncMasteryWheels();renderOperatorResults()}animateModeContent(o?'operatorLayout':'materialLayout')});el('operatorSearch').oninput=()=>{operatorPage=0;showOperatorOptions()};el('operatorSearch').onfocus=showOperatorOptions;el('operatorSearch').onclick=showOperatorOptions;document.addEventListener('click',e=>{if(!e.target.closest('#operatorSearch')&&!e.target.closest('#operatorOptions'))el('operatorOptions').classList.remove('open')});['operatorSkill','masteryState','masteryTarget'].forEach(id=>el(id).addEventListener('change',renderOperatorResults));
+// Keep the popup click within its stable container, including clicks on rebuilt page buttons.
+el('operatorOptions').addEventListener('click',e=>e.stopPropagation());
+el('picker').addEventListener('click',e=>e.stopPropagation());
+function animateModeContent(id){
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  el(id).querySelectorAll('.input-area,.results').forEach((node,i)=>{
+    node.getAnimations().forEach(a=>a.cancel());
+    node.animate([{opacity:.3,transform:'translateY(6px)'},{opacity:1,transform:'translateY(0)'}],{duration:200,delay:i*25,easing:'ease-out'});
+  });
+}
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Escape')return;
+  if(el('picker').classList.contains('open')){pickerClose();el('pickButton').focus()}
+  if(el('operatorOptions').classList.contains('open')){
+    el('operatorOptions').classList.remove('open');el('operatorSearch').focus();
+    // Focus opens the picker; Escape must leave it closed.
+    el('operatorOptions').classList.remove('open');
+  }
+});
+const masteryLabels=['未专精','专一','专二','专三'];
+function updateMasteryWheel(wheel,value){
+  value=Math.max(0,Math.min(3,value));
+  const input=el(wheel.dataset.input),changed=Number(input.value)!==value;input.value=String(value);
+  wheel.setAttribute('aria-valuenow',String(value));wheel.setAttribute('aria-valuetext',masteryLabels[value]);
+  wheel.querySelectorAll('.mastery-notch').forEach(n=>n.classList.toggle('active',Number(n.dataset.level)===value));
+  if(changed)input.dispatchEvent(new Event('change',{bubbles:true}));
+}
+function setMasteryWheel(wheel,value){value=Math.max(0,Math.min(3,value));wheel.scrollTop=value*32;updateMasteryWheel(wheel,value)}
+function syncMasteryWheels(){document.querySelectorAll('.mastery-wheel').forEach(w=>setMasteryWheel(w,Number(el(w.dataset.input).value)))}
+document.querySelectorAll('.mastery-wheel').forEach(wheel=>{
+  wheel.addEventListener('scroll',()=>updateMasteryWheel(wheel,Math.round(wheel.scrollTop/32)),{passive:true});
+  wheel.addEventListener('wheel',e=>{e.preventDefault();if(e.deltaY)setMasteryWheel(wheel,Number(el(wheel.dataset.input).value)+(e.deltaY>0?1:-1))},{passive:false});
+  wheel.addEventListener('keydown',e=>{let value=Number(el(wheel.dataset.input).value);if(e.key==='ArrowDown'||e.key==='ArrowUp')value+=e.key==='ArrowDown'?1:-1;else if(e.key==='Home')value=0;else if(e.key==='End')value=3;else return;e.preventDefault();setMasteryWheel(wheel,value)});
+  let drag=null,suppressClick=false;
+  wheel.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse'||e.button!==0)return;drag={y:e.clientY,top:wheel.scrollTop,moved:false};wheel.focus();wheel.setPointerCapture(e.pointerId);wheel.classList.add('dragging')});
+  wheel.addEventListener('pointermove',e=>{if(!drag)return;if(Math.abs(e.clientY-drag.y)>3)drag.moved=true;wheel.scrollTop=drag.top+drag.y-e.clientY});
+  const finish=()=>{if(!drag)return;suppressClick=drag.moved;drag=null;wheel.classList.remove('dragging');setMasteryWheel(wheel,Math.round(wheel.scrollTop/32))};
+  wheel.addEventListener('pointerup',finish);wheel.addEventListener('pointercancel',finish);wheel.addEventListener('lostpointercapture',finish);
+  wheel.addEventListener('click',e=>{if(suppressClick){suppressClick=false;return}let notch=e.target.closest('.mastery-notch');if(!notch&&e.clientY){const rect=wheel.getBoundingClientRect(),level=Math.floor((wheel.scrollTop+e.clientY-rect.top-32)/32);if(level>=0&&level<=3)setMasteryWheel(wheel,level)}else if(notch)setMasteryWheel(wheel,Number(notch.dataset.level))});
+});
+document.querySelectorAll('.op-view-tab').forEach(b=>b.onclick=()=>{operatorView=b.dataset.view;document.querySelectorAll('.op-view-tab').forEach(x=>x.classList.toggle('active',x===b));renderOperatorResults()});document.addEventListener('click',e=>{if(!e.target.closest('.pick-wrap'))pickerClose()});renderAll();loadGameData();
+</script>
+</body>
+</html>
